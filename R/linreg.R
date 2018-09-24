@@ -73,17 +73,17 @@ linreg <- setRefClass("linreg",
 
                           fitted_values <<- X%*%regressions_coef
                           #Residuals
-                          resi <<- y - fitted_values
+                          resi <<- round(y - fitted_values, 3)
                           #Degrees of fredom
                           n <<- length(X[,1])
                           p <<- length(X[1,])
                           dof <<- n - p
 
                           #Variance of the regression coecients
-                          resi_var <<- var(resi)
+                          resi_var <<- round(var(resi),3)
                           #t_value
 
-                          t_value <<- regressions_coef/as.numeric(sqrt(resi_var))
+                          t_value <<- regressions_coef/as.double(round(sqrt(resi_var),3))
 
                           #Metadata
                           m_formula <<- formula
@@ -92,10 +92,19 @@ linreg <- setRefClass("linreg",
 
                         #The print method
                         print = function() {
-                          cat(paste("Call: \n"))
+                          cat(paste("Call: \n\n"))
                           cat(paste("linreg(formula = ",format(m_formula), ", data = ", m_data, ")\n\n", sep = ""))
                           cat(paste("Coefficients:\n"))
-                          coef <- structure(as.vector(regressions_coef), names= row.names(regressions_coef))
+
+                          #table = setNames(data.frame(matrix(ncol = length(regressions_coef), nrow = 0)), rownames(regressions_coef))
+                          #for (i in 1:length(regressions_coef)) {
+                          #  table[1,i] = round(regressions_coef[i], 3)
+                          #}
+                          #my_print(table)
+
+                          coef <- structure(as.vector(regressions_coef), names= format(rownames(regressions_coef)))
+                          cat(paste("\  "))
+                          #my_print(as.vector(regressions_coef))
                           my_print(coef)
                         },
 
@@ -148,9 +157,9 @@ linreg <- setRefClass("linreg",
                         #Summary method
                         summary = function()
                         {
-                          cat(paste("Call: \n"))
+                          cat(paste("Call: \n\n"))
                           cat(paste("linreg(formula = ",format(m_formula), ", data = ", m_data, ")\n\n", sep = ""))
-                          cat(paste("Coefficients:\n"))
+                          cat(paste("Coefficients:\n\n"))
 
                           regressions_var <<- as.numeric(resi_var) * solve(t(X) %*% X)
                           table = data.frame(matrix(ncol = 5, nrow = 0))
@@ -158,26 +167,37 @@ linreg <- setRefClass("linreg",
                           {
                             this_t_value = regressions_coef[i]/sqrt(regressions_var[i, i])
                             this_p_value = 2*pt(abs(this_t_value), dof, lower.tail = FALSE)
-                            row = data.frame(round(regressions_coef[i], 2), round(sqrt(regressions_var[i, i]), 2), round(this_t_value, 2), formatC(this_p_value, format = "e", digits = 2))
+                            row = data.frame(round(regressions_coef[i], 2), round(sqrt(regressions_var[i, i]), 2), round(this_t_value, 2), formatC(this_p_value, format = "e", digits = 2), write_star(this_p_value))
                             rownames(row)[1] = rownames(regressions_coef)[i]
                             table = rbind(table, row)
                           }
-                          output <- structure(table, names= c("Estimate", "Std Error", "t value", "Pr(>|t|)"))
+                          output <- structure(table, names= c("Estimate", "Std Error", "t value", "Pr(>|t|)" , ""))
                           my_print(output)
 
                           cat(paste("\n"))
-                          cat(paste("Residuals standard error: ",round(sd(resi),3), ", on ", dof, " degrees of freedom.", sep = ""))
+                          cat(paste("Residual standard error: ",round(sd(resi),3), " on ", dof, " degrees of freedom", sep = ""))
                         }
 
                       )
 )
 
 #Our own print function, because we can't call the default function inside RC object
-linreg$methods(my_show = function(x){print(x)})
-my_print <- function(x){
-  print(x)
+my_print = function(x, stripoff = FALSE) {
+  if (is.data.frame(x)) {
+    print(x, row.names = stripoff)
+  }
+  else {
+    print(x)
+  }
 }
 
+write_star = function(p_value) {
+  if (p_value > 0.1) return(" ")
+  if (p_value > 0.05) return(".")
+  if (p_value > 0.01) return("*")
+  if (p_value > 0.001) return("**")
+  return("***")
+}
 
 #How to use:
 #1. Run this file (both linreg object and the my_print function)

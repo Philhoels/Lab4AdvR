@@ -5,9 +5,6 @@
 \alias{linreg-class}
 \alias{linreg}
 \title{A Reference Class to represent a linear regression package in R}
-\arguments{
-\item{m_data}{}
-}
 \value{
 Nothing
 }
@@ -55,6 +52,10 @@ Listed functions are as methods in the object included:
 \item{\code{regressions_var}}{the variance of the regression coefficent, saved as matrix}
 
 \item{\code{t_value}}{is the t-value, saved as matrix}
+
+\item{\code{m_formula}}{is the formula}
+
+\item{\code{m_data}}{will return the name of the data}
 }}
 
 

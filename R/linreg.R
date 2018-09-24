@@ -1,5 +1,4 @@
 # Documentation
-
 #' A Reference Class to represent a linear regression package in R
 #'
 #' @description Listed functions are as methods in the object included:
@@ -36,8 +35,8 @@
 #' @field resi_var
 #' @field t_value is the t-value, saved as matrix
 #'
-#' @param m_formula
-#' @param m_data
+#' @field  m_formula is the formula
+#' @field  m_data will return the name of the data
 #'
 #' @return Nothing
 #' @export
@@ -127,10 +126,6 @@ linreg <- setRefClass("linreg",
                             stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
                             xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
                             ylab(expression(sqrt("|Standardized residuals|")))
-                          #xlab(paste("Fitted Values\n", "lm(", format(l_formula), ")", ""))+
-                          #ylab(expression(sqrt("|Standardized residuals|")))+
-                          #stat_summary(aes(y = y_plot , x = fitted_values ,group=1),
-                          #             fun.y= median,  colour="red", geom="line",group=1)
 
                           my_print(plot2)
                         },
@@ -165,7 +160,7 @@ linreg <- setRefClass("linreg",
                             table = rbind(table, row)
                           }
                           colnames(table) = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "")
-                          my_print(table, TRUE)
+                          my_print(table)
 
                           cat(paste("\n"))
                           cat(paste("Residual standard error: ",round(sd(resi),3), " on ", dof, " degrees of freedom", sep = ""))
@@ -174,32 +169,39 @@ linreg <- setRefClass("linreg",
                       )
 )
 
-#Our own print function, because we can't call the default function inside RC object
-my_print = function(x, stripoff = FALSE) {
-  if (is.data.frame(x)) {
-    print(x, row.names = stripoff)
-  }
-  else {
+#'my_print function
+#'Our own print function, because we can't call the default function inside RC object
+#'@examples print("This is an example!")
+#'@param x is the input.
+
+my_print = function(x) {
     print(x)
-  }
 }
 
+#'write_star function
+#'generate the start base on p_value, follow the rule of lm function
+#'@param p_value the input
 write_star = function(p_value) {
-  if (p_value > 0.1) return(" ")
-  if (p_value > 0.05) return(".")
-  if (p_value > 0.01) return("*")
-  if (p_value > 0.001) return("**")
-  return("***")
+  if (p_value > 0.1)
+    output <- ""
+  else if (p_value > 0.05)
+    output <- "."
+  else if (p_value > 0.01)
+    output <- "*"
+  if (p_value > 0.001)
+    output <- "**"
+  else  output <- "***"
+  return(output)
 }
 
 #How to use:
-#1. Run this file (both linreg object and the my_print function)
+#1. Run this file (both linreg object and the my_print, write_star function)
 #2. mod_object <- linreg(Petal.Length~Species, data = iris)
 #3. mod_object$print()
 #4. mod_object$plot()
 #5. mod_object$summary()
 
-linreg_mod = linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data=iris)
+#linreg_mod = linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data=iris)
 #linreg_mod$print()
-linreg_mod$summary()
+#linreg_mod$summary()
 #linreg_mod$plot()

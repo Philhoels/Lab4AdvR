@@ -51,6 +51,8 @@ Listed functions are as methods in the object included:
 
 \item{\code{regressions_var}}{the variance of the regression coefficent, saved as matrix}
 
+\item{\code{resi_var}}{is the variance of residuals}
+
 \item{\code{t_value}}{is the t-value, saved as matrix}
 
 \item{\code{m_formula}}{is the formula}

@@ -32,7 +32,7 @@
 #' @field p the number of parameters in the model, saved as integer
 #' @field dof the degree of freedom, saved as integer
 #' @field regressions_var the variance of the regression coefficent, saved as matrix
-#' @field resi_var
+#' @field resi_var is the variance of residuals
 #' @field t_value is the t-value, saved as matrix
 #'
 #' @field  m_formula is the formula
@@ -57,7 +57,7 @@ linreg <- setRefClass("linreg",
                         m_formula ="formula",
                         m_data = "character"),
 
-                      #--------------------------------
+#-------------------------------------------------------------------------
                       methods = list
                       (
                         #This function will calculate necessary parameters
@@ -71,8 +71,10 @@ linreg <- setRefClass("linreg",
                           regressions_coef<<- as.matrix(solve(t(X)%*%X) %*% t(X)%*%y)
 
                           fitted_values <<- X%*%regressions_coef
+
                           #Residuals
                           resi <<- y - fitted_values
+
                           #Degrees of fredom
                           n <<- length(X[,1])
                           p <<- length(X[1,])
@@ -80,10 +82,9 @@ linreg <- setRefClass("linreg",
 
                           #Variance of the regression coeffcients
                           resi_var <<- (t(resi) %*% resi)/dof
+                          regressions_var <<- as.numeric(resi_var) * solve(t(X) %*% X)
 
                           t_value <<- regressions_coef/as.double(sqrt(resi_var))
-
-                          regressions_var <<- as.numeric(resi_var) * solve(t(X) %*% X)
 
                           #Metadata
                           m_formula <<- formula
@@ -127,16 +128,17 @@ linreg <- setRefClass("linreg",
 
                           #Plot 1
                           residuals_vs_fitted <- ggplot(data.frame(resi, fitted_values), aes(x=fitted_values, y=resi)) +
-                            geom_point() + labs(x = "Fitted values", y = "Residuals") +
+                            geom_point() +
                             stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
                             xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
-                            ylab("Residuals") + theme_bw() + ggtitle("Residuals vs Fitted") +   linkoping_theme
+                            ylab("Residuals") +
+                            ggtitle("Residuals vs Fitted") +
+                            linkoping_theme
 
-
-                          #stat_summary(aes(y = resi, x = fitted_values ,group=1), fun.y=median, colour="red", geom="line",group=1)
-
+                          #Print plot 1
                           my_print(residuals_vs_fitted)
 
+                          #--------------------------------
                           #Prepare for plot 2
                           std_vs_fitted <- as.data.frame(cbind(sqrt(abs(resi-mean(resi))), fitted_values))
                           names(std_vs_fitted) = c("Standardized_residuals", "fitted_values")
@@ -147,9 +149,11 @@ linreg <- setRefClass("linreg",
                             geom_point() +
                             stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
                             xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
-                            ylab(expression(sqrt("|Standardized residuals|"))) + theme_bw() + ggtitle("Scale Location") +
+                            ylab(expression(sqrt("|Standardized residuals|"))) +
+                            ggtitle("Scale Location") +
                             linkoping_theme
 
+                          #Print plot2
                           my_print(plot2)
                         },
                         resid = function(){
@@ -171,12 +175,11 @@ linreg <- setRefClass("linreg",
                           cat(paste("linreg(formula = ",format(m_formula), ", data = ", m_data, ")\n\n", sep = ""))
                           cat(paste("Coefficients:\n\n"))
 
+                          regressions_var_diagonal <- diag(regressions_var)
                           table = data.frame(matrix(ncol = 5, nrow = 0))
                           for (i in 1:length(regressions_coef))
                           {
-                            this_t_value = regressions_coef[i]/sqrt(regressions_var[i, i])
-                            reg = regressions_coef[i]
-                            reg_var = sqrt(regressions_var[i, i])
+                            this_t_value = regressions_coef[i]/sqrt(regressions_var_diagonal[i])
                             this_p_value = 2*pt(abs(this_t_value), dof, lower.tail = FALSE)
                             row = data.frame(round(regressions_coef[i], 2), round(sqrt(regressions_var[i, i]), 2), round(this_t_value, 2), formatC(this_p_value, format = "e", digits = 2), write_star(this_p_value))
                             row.names(row)[1] = row.names(regressions_coef)[i]
@@ -224,7 +227,4 @@ write_star = function(p_value) {
 #4. mod_object$plot()
 #5. mod_object$summary()
 
-#linreg_mod = linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data=iris)
-#linreg_mod$print()
-#linreg_mod$summary()
-#linreg_mod$plot()
+#a <- linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data = iris)

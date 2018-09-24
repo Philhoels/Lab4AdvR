@@ -105,12 +105,34 @@ linreg <- setRefClass("linreg",
                         {
                           library(ggplot2)
 
+                          linkoping_theme <-
+                            theme(
+                              plot.margin = unit(c(1.2,1.2,1.2,1.2), "cm"),
+                              panel.background = element_rect(fill="#ccf0fa"),
+                              panel.grid.major.y = element_blank(),
+                              panel.grid.minor.y = element_blank(),
+                              panel.grid.major.x = element_blank(),
+                              panel.grid.minor.x = element_blank(),
+                              axis.line = element_line(color= "#58585b", size=1),
+                              axis.text.x = element_text(color="#3dd2dc", size="11"),
+                              axis.text.y = element_text(color="#3dd2dc", size="11"),
+                              axis.title.x = element_text(color="Black", size="12", face="bold.italic"),
+                              axis.title.y = element_text(color="Black", size="12", face="bold.italic"),
+                              axis.ticks.y = element_blank(),
+                              axis.ticks.x = element_line(color = "#9D9ADC", size = 0.3),
+                              plot.title = element_text(color="blue2", face="bold", size="14"),
+                              legend.position="bottom", legend.title = element_blank(),
+                              legend.text = element_text(color="Black", size="12")
+                            )
+
                           #Plot 1
                           residuals_vs_fitted <- ggplot(data.frame(resi, fitted_values), aes(x=fitted_values, y=resi)) +
-                            geom_point() +
+                            geom_point() + labs(x = "Fitted values", y = "Residuals") +
                             stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
                             xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
-                            ylab("Residuals")
+                            ylab("Residuals") + theme_bw() + ggtitle("Residuals vs Fitted") +   linkoping_theme
+
+
                           #stat_summary(aes(y = resi, x = fitted_values ,group=1), fun.y=median, colour="red", geom="line",group=1)
 
                           my_print(residuals_vs_fitted)
@@ -122,10 +144,11 @@ linreg <- setRefClass("linreg",
 
                           #Plot 2
                           plot2 <- ggplot(std_vs_fitted, aes(x = fitted_values, y = y_plot))+
-                            geom_point()+
+                            geom_point() +
                             stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
                             xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
-                            ylab(expression(sqrt("|Standardized residuals|")))
+                            ylab(expression(sqrt("|Standardized residuals|"))) + theme_bw() + ggtitle("Scale Location") +
+                            linkoping_theme
 
                           my_print(plot2)
                         },

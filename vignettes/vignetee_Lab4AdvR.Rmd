@@ -16,62 +16,215 @@ knitr::opts_chunk$set(
 )
 ```
 
-What should be in this document:
+### This is a linear regression package in R
 
-describes your function and how to use it on dataset such as iris or faith-
-ful. 
-show a simple walkthrough of your package 
-showing how to use the function linreg together
-with implemented methods. 
+In this package are following functions inplemented **print()**, **plot()**, **resid()**, **pred()**, **coef()** and **summary()**. 
+  
+A demonstration will follow later in on this page.
 
-possible to read using the browseVignettes(‘‘[yourpackagenamehere]’’) 
-
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
-
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
-
-## Discirbing of the function
-Useing the dataset iris or faithful
+First of all, this package empowers you to create linreg objects.
+This is a references class (RC) object. 
 
 
+- *For all demonstrations is the data set "iris" used.*
 
-## Walkthrough the package
+#### Create an object "mod_object"
+```
+mod_object <- linreg(Petal.Length~Species, data = iris)
+```
+We created an linreg object ob the object type RC. 
+Used the as input data "iris" and used "Petal.Length" as dependent variable and as "Species" independent variable of the linear regression.
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+With the created object you can create followed calculations:
+  
+  - Regressions coefficients - *regressions_coef()*
+  
+  - fitted values - *fitted_values()*
+  
+  - residuals -*resi()*
+  
+  - degrees of freedom - *dof()*
+  
+  - residual variance - *resi_var()*
+  
+  - variance of the regression coefficients - *regressions_var()*
+  
+  - t-values for each coefficient - *t_value()*
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
 
-## How to use the function lingreg together with implemented methods
-
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+### Example:  
+```
+mod_object$regressions_coef
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+### Methods
+Like already maintained are some methods implemented.
+### How to use the methods:
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+- **print()** print out the coefficients and coefficient names, similar as done by the lm class.
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+```
+mod_object$print()
 ```
 
-Also a quote using `>`:
+- **plot()** it will plot the two plots using ggplot2.
+```
+mod_object$plot()
+```
 
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))
+  
+- **resid()** it returns the vector of residuals e. 
+```
+mod_object$resid()
+```
+
+- **pred()**  it returns the predicted values yˆ.
+```
+mod_object$pred()
+```
+
+
+- **coef()**  it returns the coefficients as a named vector.
+```
+mod_object$coef()
+```
+
+- **summary()** it returns a similar printout as printed for lm objects, but only  present the coefficients with their standard error, t-value and p-value as well as the estimate of σˆ and the degrees of freedom in the model.
+```
+mod_object$summary()
+```
+
+### The Code 
+```
+linreg <- setRefClass("linreg",
+                      fields = list(
+                        X = "matrix",
+                        y = "matrix",
+                        regressions_coef = "matrix",
+                        fitted_values = "matrix",
+                        resi = "matrix",
+                        n = "numeric",
+                        p = "numeric",
+                        dof = "numeric",
+                        regressions_var = "matrix",
+                        resi_var = "matrix",
+                        t_value = "matrix",
+                        m_formula ="formula",
+                        m_data = "character"),
+
+                      #--------------------------------
+                      methods = list
+                      (
+                        #This function will calculate necessary parameters
+                        initialize = function(formula, data)
+                        {
+                          #Generate X and y
+                          X <<- model.matrix(formula, data)
+                          y <<- as.matrix(data[all.vars(formula)[1]])
+
+                          #Regressions coeficients
+                          regressions_coef<<- as.matrix(solve(t(X)%*%X) %*% t(X)%*%y)
+
+                          fitted_values <<- X%*%regressions_coef
+                          #Residuals
+                          resi <<- y - fitted_values
+                          #Degrees of fredom
+                          n <<- length(X[,1])
+                          p <<- length(X[1,])
+                          dof <<- n - p
+
+                          #Variance of the regression coecients
+                          resi_var <<- var(resi)
+                          #t_value
+
+                          t_value <<- regressions_coef/as.numeric(sqrt(resi_var))
+
+                          #Metadata
+                          m_formula <<- formula
+                          m_data <<- deparse(substitute(data))
+                        },
+
+                        #The print method
+                        print = function() {
+                          cat(paste("Call: \n"))
+                          cat(paste("linreg(formula = ",format(m_formula), ", data = ", m_data, ")\n\n", sep = ""))
+                          cat(paste("Coefficients:\n"))
+                          coef <- structure(as.vector(regressions_coef), names= row.names(regressions_coef))
+                          my_print(coef)
+                        },
+
+                        #The plot method
+                        plot = function()
+                        {
+                          library(ggplot2)
+
+                          #Plot 1
+                          residuals_vs_fitted <- ggplot(data.frame(resi, fitted_values), aes(x=fitted_values, y=resi)) +
+                            geom_point() +
+                            stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
+                            xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
+                            ylab("Residuals")
+
+                          #stat_summary(aes(y = resi, x = fitted_values ,group=1), fun.y=median, colour="red", geom="line",group=1)
+
+                          my_print(residuals_vs_fitted)
+
+                          #Prepare for plot 2
+                          std_vs_fitted <- as.data.frame(cbind(sqrt(abs(resi-mean(resi))), fitted_values))
+                          names(std_vs_fitted) = c("Standardized_residuals", "fitted_values")
+                          y_plot <- std_vs_fitted[,1]
+
+                          #Plot 2
+                          plot2 <- ggplot(std_vs_fitted, aes(x = fitted_values, y = y_plot))+
+                            geom_point()+
+                            stat_smooth(method='lm', colour="red", se=FALSE, span = 1) +
+                            xlab(paste("Fitted Values\n", "linreg(", format(m_formula), ")", ""))+
+                            ylab(expression(sqrt("|Standardized residuals|")))
+                          #xlab(paste("Fitted Values\n", "lm(", format(l_formula), ")", ""))+
+                          #ylab(expression(sqrt("|Standardized residuals|")))+
+                          #stat_summary(aes(y = y_plot , x = fitted_values ,group=1),
+                          #             fun.y= median,  colour="red", geom="line",group=1)
+
+                          my_print(plot2)
+                        },
+                        resid = function(){
+                          return(resi)
+                        },
+                        pred = function()
+                        {
+                          return(fitted_values)
+                        },
+                        coef = function(){
+                          coef <- structure(as.vector(regressions_coef), names= row.names(regressions_coef))
+                          return(coef)
+                        },
+
+                        #Summary method
+                        summary = function()
+                        {
+                          cat(paste("Call: \n"))
+                          cat(paste("linreg(formula = ",format(m_formula), ", data = ", m_data, ")\n\n", sep = ""))
+                          cat(paste("Coefficients:\n"))
+
+                          regressions_var <<- as.numeric(resi_var) * solve(t(X) %*% X)
+                          table = data.frame(matrix(ncol = 5, nrow = 0))
+                          for (i in 1:length(regressions_coef))
+                          {
+                            this_t_value = regressions_coef[i]/sqrt(regressions_var[i, i])
+                            this_p_value = 2*pt(abs(this_t_value), dof, lower.tail = FALSE)
+                            row = data.frame(round(regressions_coef[i], 2), round(sqrt(regressions_var[i, i]), 2), round(this_t_value, 2), formatC(this_p_value, format = "e", digits = 2))
+                            rownames(row)[1] = rownames(regressions_coef)[i]
+                            table = rbind(table, row)
+                          }
+                          output <- structure(table, names= c("Estimate", "Std Error", "t value", "Pr(>|t|)"))
+                          my_print(output)
+
+                          cat(paste("\n"))
+                          cat(paste("Residuals standard error: ",round(sd(resi),3), ", on ", dof, " degrees of freedom.", sep = ""))
+                        }
+
+                      )
+)
+```
+
+# This code is not the latest version - Update when fails are removed !
